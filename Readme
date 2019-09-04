@@ -1,2 +1,393 @@
-Hi dude, im learnimg GIT
-and i work in KPMG
+This Branch Contains code of master Calender in the language SQL
+
+USE [Fifa 19]
+GO
+
+/****** Object:  StoredProcedure [dbo].[SP_DIM_MASTER_CALENDER]    Script Date: 9/4/2019 8:35:00 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+create  PROC [dbo].[SP_DIM_MASTER_CALENDER] AS BEGIN
+
+--drop table [dbo].[DIM_MASTER_CALENDAR]
+DECLARE @StartDate DATE = '20160101', @NumberOfYears INT = 30;
+
+-- prevent set or regional settings from interfering with 
+-- interpretation of dates / literals
+
+SET DATEFIRST 7;
+SET DATEFORMAT mdy;
+SET LANGUAGE US_ENGLISH;
+
+DECLARE @CutoffDate DATE = DATEADD(YEAR, @NumberOfYears, @StartDate);
+
+CREATE TABLE  #dim
+(
+  [date]       DATE PRIMARY KEY, 
+  [day]        AS DATEPART(DAY,      [date]),
+  [month]      AS DATEPART(MONTH,    [date]),
+  FirstOfMonth AS CONVERT(DATE, DATEADD(MONTH, DATEDIFF(MONTH, 0, [date]), 0)),
+  [MonthName]  AS DATENAME(MONTH,    [date]),
+  [week]       AS DATEPART(WEEK,  [date]),
+  [ISOweek]    AS DATEPART(ISO_WEEK, [date]),
+  [DayOfWeek]  AS DATEPART(WEEKDAY,  [date]),
+  [quarter]    AS DATEPART(QUARTER,  [date]),
+  [year]       AS DATEPART(YEAR,     [date]),
+  FirstOfYear  AS CONVERT(DATE, DATEADD(YEAR,  DATEDIFF(YEAR,  0, [date]), 0)),
+  Style112     AS CONVERT(CHAR(8),   [date], 112),
+  Style101     AS CONVERT(CHAR(10),  [date], 101)
+);
+INSERT #dim([date]) 
+SELECT d
+FROM
+(
+  SELECT d = DATEADD(DAY, rn - 1, @StartDate)
+  FROM 
+  (
+    SELECT TOP (DATEDIFF(DAY, @StartDate, @CutoffDate)) 
+      rn = ROW_NUMBER() OVER (ORDER BY s1.[object_id])
+    FROM sys.all_objects AS s1
+    CROSS JOIN sys.all_objects AS s2
+    -- on my system this would support > 5 million days
+    ORDER BY s1.[object_id]
+  ) AS x
+) AS y;
+
+--select * from [Insights].[Dim_MasterCalendar]
+
+CREATE table  [dbo].[DIM_MASTER_CALENDAR]
+(
+
+
+DateKey             INT         null ,
+  [FullDate]              DATE        null,
+--  [OT_Weekday]           TINYINT     null,
+--  [OT_WeekDayName]         VARCHAR(10) null,
+--[OT_DayName] TINYINT     null,
+--  [OT_IsWeekend]           BIT         null,
+--  [OT_Month]             TINYINT     null,
+--  [OT_MonthName]         VARCHAR(10) null,
+--  [OT_Quarter]           TINYINT     null,
+--[OT_WKNum] TINYINT     null,
+--  [OT_Year]              INT         null,
+--  [HR_Weekday]           TINYINT     null,
+--  [HR_WeekDayName]         VARCHAR(10) null,
+--[HR_DayName] TINYINT     null,
+--  [HR_IsWeekend]           BIT         null,
+--  [HR_Month]             TINYINT     null,
+--  [HR_MonthName]         VARCHAR(10) null,
+--  [HR_Quarter]           TINYINT     null,
+--  [HR_Year]              INT         null,
+--[HR_WKNum] TINYINT     null,
+  [Weekday]           TINYINT     null,
+  [WeekDayName]         VARCHAR(10) null,
+[DayName] TINYINT     null,
+  [IsWeekend]           BIT         null,
+  [Month]             TINYINT     null,
+  [MonthName]         VARCHAR(10) null,
+  [Quarter]           TINYINT     null,
+  [Year]              INT         null,
+[WKNum] TINYINT     null 
+)
+
+--select * From [Insights].[Dim_MasterCalendar]
+
+
+
+
+
+INSERT [dbo].[DIM_MASTER_CALENDAR] WITH (TABLOCKX)
+SELECT
+  DateKey       = CONVERT(INT, Style112),
+  [FullDate]    = [date],
+  --[OT_Weekday]     = CONVERT(TINYINT, [DayOfWeek]),
+  --[OT_WeekDayName] = CONVERT(VARCHAR(10), DATENAME(WEEKDAY, [date])),
+  --[OT_DayName]    = CONVERT(TINYINT, [day]),
+  --[OT_IsWeekend]   = CONVERT(BIT, CASE WHEN [DayOfWeek] IN (1,7) THEN 1 ELSE 0 END),
+  --[OT_Month]     = CONVERT(TINYINT, [month]),
+  --[OT_MonthName]   = CONVERT(VARCHAR(10), [MonthName]),
+  --[OT_Quarter]     = CONVERT(TINYINT, [quarter]),
+  --[OT_WKNum]  = CONVERT(TINYINT, DENSE_RANK() OVER (PARTITION BY [year], [month] ORDER BY [week])),
+  --[OT_Year]        = [year],
+  --[HR_Weekday]     = CONVERT(TINYINT, [DayOfWeek]),
+  --[HR_WeekDayName] = CONVERT(VARCHAR(10), DATENAME(WEEKDAY, [date])),
+  --[HR_DayName]    = CONVERT(TINYINT, [day]),
+  --[HR_IsWeekend]   = CONVERT(BIT, CASE WHEN [DayOfWeek] IN (1,7) THEN 1 ELSE 0 END),
+  --[HR_Month]     = CONVERT(TINYINT, [month]),
+  --[HR_MonthName]   = CONVERT(VARCHAR(10), [MonthName]),
+  --[HR_Quarter]     = CONVERT(TINYINT, [quarter]),
+  --[HR_Year]        = [year],
+  --[HR_WKNum]  = CONVERT(TINYINT, DENSE_RANK() OVER (PARTITION BY [year], [month] ORDER BY [week])),
+  [Weekday]     = CONVERT(TINYINT, [DayOfWeek]),
+  [WeekDayName] = CONVERT(VARCHAR(10), DATENAME(WEEKDAY, [date])),
+  [DayName]    = CONVERT(TINYINT, [day]),
+  [IsWeekend]   = CONVERT(BIT, CASE WHEN [DayOfWeek] = 1 THEN 1 ELSE 0 END),
+  [Month]     = CONVERT(TINYINT, [month]),
+  [MonthName]   = CONVERT(VARCHAR(10), [MonthName]),
+  [Quarter]     = CONVERT(TINYINT, [quarter]),
+  [Year]        = [year],
+  [WKNum]  = CONVERT(TINYINT, DENSE_RANK() OVER (PARTITION BY [year], [month] ORDER BY [week]))
+
+  --QuarterName   = CONVERT(VARCHAR(6), CASE [quarter] WHEN 1 THEN 'First' 
+  --                WHEN 2 THEN 'Second' WHEN 3 THEN 'Third' WHEN 4 THEN 'Fourth' END), 
+
+ --[DOWInMonth]  = CONVERT(TINYINT, ROW_NUMBER() OVER 
+ --                 (PARTITION BY FirstOfMonth, [DayOfWeek] ORDER BY [date])),
+ -- [DayOfYear]   = CONVERT(SMALLINT, DATEPART(DAYOFYEAR, [date])),
+  --WeekOfMonth   = CONVERT(TINYINT, DENSE_RANK() OVER 
+  --                (PARTITION BY [year], [month] ORDER BY [week])),
+  --WeekOfYear    = CONVERT(TINYINT, [week]),
+  --ISOWeekOfYear = CONVERT(TINYINT, ISOWeek),
+  --[Month]       = CONVERT(TINYINT, [month]),
+ 
+FROM #dim
+OPTION (MAXDOP 1);
+
+--update [Insights].[Dim_MasterCalendar]
+--set OT_Month =
+--case 
+--when day(FullDate) >=16 and month(FullDate)!=12 then month(FullDate)+1
+--when month(FullDate)=12 and day(FullDate) >=16 then 1
+--else month(FullDate)
+--end
+
+--SELECT OT_Month,OT_MonthName,OT_WKNum,FullDate,
+--case 
+--when day(FullDate) >=16 and month(FullDate)!=12 then month(FullDate)+1
+--when month(FullDate)=12 and day(FullDate) >=16 then 1
+--else month(FullDate)
+--end AS FD
+--FROM[Insights].[Dim_MasterCalendar]
+
+
+--SELECT OT_Month,OT_MonthName,FullDate,diff FROM [Insights].[Dim_MasterCalendar]-- WHERE YEAR(FULLDATE) ='2022'
+
+----update [Insights].[Dim_MasterCalendar]
+----set OT_MonthName
+----= CONVERT(CHAR(10), DATENAME(MONTH, FullDate)) from [Insights].[Dim_MasterCalendar]
+
+--update [Insights].[Dim_MasterCalendar]
+--set OT_WKNum =
+
+--case
+--when day(FullDate) between 16 and 22  then '1'
+--when day(FullDate) between 23 and 29  then '2'
+--when day(FullDate) >=29 OR day(FullDate) BETWEEN 1 AND 5   then '3'
+--when day(FullDate) between 6 and 12  then '4'
+--ELSE '5'
+--end 
+alter table [dbo].[DIM_MASTER_CALENDAR]
+alter column wknum varchar(10)
+
+UPDATE [dbo].[DIM_MASTER_CALENDAR]
+SET WKNum=datediff(week, convert(varchar(6), FullDate, 112) + '01', FullDate) + 1
+from [dbo].[DIM_MASTER_CALENDAR]
+
+update 
+ dbo.[DIM_MASTER_CALENDAR]
+
+set WKNum= concat('Wk',cast(wknum as nvarchar))
+
+ --WHERE FullDate >='2023-12-21'
+
+--update [Insights].[Dim_MasterCalendar]
+--set OT_MonthName =
+--CASE
+--WHEN OT_Month=1 THEN 'January'
+--WHEN OT_Month=2 THEN 'February'
+--WHEN OT_Month=3 THEN 'March'
+--WHEN OT_Month=4 THEN 'April'
+--WHEN OT_Month=5 THEN 'May'
+--WHEN OT_Month=6 THEN 'June'
+--WHEN OT_Month=7 THEN 'July'
+--WHEN OT_Month=8 THEN 'August'
+--WHEN OT_Month=9 THEN 'September'
+--WHEN OT_Month=10 THEN 'October'
+--WHEN OT_Month=11 THEN 'November'
+--WHEN OT_Month=12 THEN 'December'
+--end
+
+--update [Insights].[Dim_MasterCalendar]
+--set HR_Month =
+--case 
+--when day(FullDate) >=21 and month(FullDate)!=12 then month(FullDate)+1
+--when month(FullDate)=12 and day(FullDate) >=21 then 1
+--else month(FullDate)
+--end 
+
+--SELECT HR_Month,HR_MonthName,HR_WKNum,FullDate,
+--case 
+--when day(FullDate) >=21 and month(FullDate)!=12 then month(FullDate)+1
+--when month(FullDate)=12 and day(FullDate) >=21 then 1
+--else month(FullDate)
+--end AS FD
+--FROM[Insights].[Dim_MasterCalendar]
+
+
+--update [Insights].[Dim_MasterCalendar]
+--set HR_MonthName =
+--CASE
+--WHEN HR_Month=1 THEN 'January'
+--WHEN HR_Month=2 THEN 'February'
+--WHEN HR_Month=3 THEN 'March'
+--WHEN HR_Month=4 THEN 'April'
+--WHEN HR_Month=5 THEN 'May'
+--WHEN HR_Month=6 THEN 'June'
+--WHEN HR_Month=7 THEN 'July'
+--WHEN HR_Month=8 THEN 'August'
+--WHEN HR_Month=9 THEN 'September'
+--WHEN HR_Month=10 THEN 'October'
+--WHEN HR_Month=11 THEN 'November'
+--WHEN HR_Month=12 THEN 'December'
+--end
+
+--select OT_Year,fulldate FROM[Insights].[Dim_MasterCalendar]
+
+--SELECT HR_Year,fulldate,
+--case 
+--when day(FullDate) >=21 and month(FullDate)=12 then year(FullDate)+1
+----when month(FullDate)=12 and day(FullDate) >=21 then 1
+--else year(FullDate)
+--end AS FD
+--FROM[Insights].[Dim_MasterCalendar]
+
+--SELECT OT_Year,fulldate,
+--case 
+--when day(FullDate) >=16 and month(FullDate)=12 then year(FullDate)+1
+----when month(FullDate)=12 and day(FullDate) >=21 then 1
+--else year(FullDate)
+--end AS FD
+--FROM[Insights].[Dim_MasterCalendar]
+
+--UPDATE [Insights].[Dim_MasterCalendar]
+--SET OT_Year=
+--case 
+--when day(FullDate) >=16 and month(FullDate)=12 then year(FullDate)+1
+----when month(FullDate)=12 and day(FullDate) >=21 then 1
+--else year(FullDate)
+--end 
+
+--UPDATE [Insights].[Dim_MasterCalendar]
+--SET HR_Year=
+--case 
+--when day(FullDate) >=21 and month(FullDate)=12 then year(FullDate)+1
+----when month(FullDate)=12 and day(FullDate) >=21 then 1
+--else year(FullDate)
+--end 
+
+--ALTER TABLE [Insights].[Dim_MasterCalendar_bkp] ALTER COLUMN WKNUM VARCHAR(10)
+
+--UPDATE [Insights].[Dim_MasterCalendar]
+--SET DIFF = NULL
+--update  [Insights].[Dim_MasterCalendar_bkp]
+--set FiscalMonth =  
+--case
+--when month(FullDate)=4 then '1'
+--when month(FullDate)=5 then '2'
+--when month(FullDate)=6 then '3'
+--when month(FullDate)=7 then '4'
+--when month(FullDate)=8 then '5'
+--when month(FullDate)=9 then '6'
+--when month(FullDate)=10 then '7'
+--when month(FullDate)=11 then '8'
+--when month(FullDate)=12 then '9'
+--when month(FullDate)=1 then '10'
+--when month(FullDate)=2 then '11'
+--when month(FullDate)=3 then '12'
+--end 
+
+
+--update [Insights].[Dim_MasterCalendar]
+--set HR_WKNum =
+
+--case
+--when day(FullDate) between 21 and 27  then '1'
+--when day(FullDate) >=28 AND day(FullDate) BETWEEN 1 AND 3   then '2'
+--when day(FullDate) between 4 and 10  then '3'
+--when day(FullDate) between 11 and 17  then '4'
+--ELSE '5'
+
+
+--select fulldate, DATEDIFF(day,'2015-12-21',DATEADD(day,7,fulldate)) from [Stg_Insights].[Insights].[Dim_MasterCalendar]
+--where HR_MonthName='January' and HR_Year=2016
+
+--alter table [Stg_Insights].[Insights].[Dim_MasterCalendar] add diff int
+
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff=DATEDIFF(day,'2014-12-21',DATEADD(day,7,fulldate)) 
+--where HR_MonthName='January' and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-01-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='February'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-02-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='March'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-03-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='April'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-04-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='May'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-05-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='June'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-06-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='July'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-07-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='August'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-08-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='September'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-09-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='October'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-10-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='November'and HR_Year=2015
+
+--update [Stg_Insights].[Insights].[Dim_MasterCalendar] set diff= DATEDIFF(day,'2015-11-21',DATEADD(day,7,fulldate))
+--where HR_MonthName='December'and HR_Year=2015
+
+
+
+--SELECT distinct year(fulldate)FROM [Insights].[Dim_MasterCalendar] WHERE diff is not null
+
+
+--UPDATE [Stg_Insights].[Insights].[Dim_MasterCalendar]  
+--SET HR_WKNum = case 
+--when diff  between 7 and 13  then '1'
+-- when diff  between 14 and 20  then '2'
+--  when diff  between 21 and 27  then '3'
+--    when diff  between 28 and 34  then '4'
+--	ELSE'5'
+--	end 
+	
+
+
+	--DELETE from [Stg_Insights].[Insights].[Dim_MasterCalendar]   where FullDate >'2023-12-20'
+	update [dbo].[DIM_MASTER_CALENDAR]  
+	set WKNum =
+	case 
+	when  DAY(FullDate) >= '01' and  DAY(FullDate) <= '07'  THEN 'Wk 1'
+	when  DAY(FullDate) >= '08' and  DAY(FullDate) <= '14'  THEN 'Wk 2'
+	when  DAY(FullDate) >= '15' and  DAY(FullDate) <= '21'  THEN 'Wk 3'
+	else 'Wk 4'
+	--when WKNum = '5' THEN 'Wk 5'
+	end 
+	
+--	UPDATE [Insights].[Dim_MasterCalendar] 
+--	 SET HR_WKNum = c.HR_WKNum  ,WKNum =C.WKNum
+--FROM [Insights].[Dim_MasterCalendar]  t
+--  INNER JOIN [Insights].[Dim_MasterCalendar_bkp]  c 
+--    ON t.FullDate = c.FullDate-- AND t.year = c.year
+----WHERE c.year=x
+--	select * from [Insights].[Dim_MasterCalendar_bkp] 
+END
+GO
+
+
